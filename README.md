@@ -13,3 +13,5 @@ According to the orignial Author:
     of foundry and the single source nature of files."
     
 So use on your own risk!
+
+Original Repository: https://github.com/Djphoenix719/PDFoundry
