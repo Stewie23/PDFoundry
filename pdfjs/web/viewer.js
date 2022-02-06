@@ -72,7 +72,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE
   },
   defaultUrl: {
-    value: "",
+    value: "compressed.tracemonkey-pldi-09.pdf",
     kind: OptionKind.VIEWER
   },
   defaultZoomValue: {
@@ -96,7 +96,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE
   },
   enableScripting: {
-    value: false,
+    value: true,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE
   },
   externalLinkRel: {
@@ -941,7 +941,11 @@ const PDFViewerApplication = {
     }
 
     if (this.pdfDocument?.annotationStorage.size > 0 && this._annotationStorageModified) {
-      try {} catch (reason) {}
+      try {
+        await this.save({
+          sourceEventType: "save"
+        });
+      } catch (reason) {}
     }
 
     const promises = [];
@@ -2873,8 +2877,33 @@ function webViewerKeyDown(evt) {
     }
   }
 
+  if (cmd === 1 || cmd === 8) {
+    switch (evt.keyCode) {
+      case 83:
+        eventBus.dispatch("download", {
+          source: window
+        });
+        handled = true;
+        break;
+
+      case 79:
+        {
+          eventBus.dispatch("openfile", {
+            source: window
+          });
+          handled = true;
+        }
+        break;
+    }
+  }
+
   if (cmd === 3 || cmd === 10) {
     switch (evt.keyCode) {
+      case 80:
+        PDFViewerApplication.requestPresentationMode();
+        handled = true;
+        break;
+
       case 71:
         PDFViewerApplication.appConfig.toolbar.pageNumber.select();
         handled = true;
@@ -9836,14 +9865,13 @@ class BaseViewer {
   #enablePermissions = false;
   #previousContainerHeight = 0;
   #scrollModePageState = null;
-  #onVisibilityChange = null;
 
   constructor(options) {
     if (this.constructor === BaseViewer) {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.13.16';
+    const viewerVersion = '2.12.313';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -10105,24 +10133,11 @@ class BaseViewer {
   }
 
   #onePageRenderedOrForceFetch() {
-    if (document.visibilityState === "hidden" || !this.container.offsetParent || this._getVisiblePages().views.length === 0) {
+    if (!this.container.offsetParent || this._getVisiblePages().views.length === 0) {
       return Promise.resolve();
     }
 
-    const visibilityChangePromise = new Promise(resolve => {
-      this.#onVisibilityChange = () => {
-        if (document.visibilityState !== "hidden") {
-          return;
-        }
-
-        resolve();
-        document.removeEventListener("visibilitychange", this.#onVisibilityChange);
-        this.#onVisibilityChange = null;
-      };
-
-      document.addEventListener("visibilitychange", this.#onVisibilityChange);
-    });
-    return Promise.race([this._onePageRenderedCapability.promise, visibilityChangePromise]);
+    return this._onePageRenderedCapability.promise;
   }
 
   setDocument(pdfDocument) {
@@ -10196,11 +10211,6 @@ class BaseViewer {
       this.eventBus._off("pagerendered", this._onAfterDraw);
 
       this._onAfterDraw = null;
-
-      if (this.#onVisibilityChange) {
-        document.removeEventListener("visibilitychange", this.#onVisibilityChange);
-        this.#onVisibilityChange = null;
-      }
     };
 
     this.eventBus._on("pagerendered", this._onAfterDraw);
@@ -10387,11 +10397,6 @@ class BaseViewer {
       this.eventBus._off("pagerendered", this._onAfterDraw);
 
       this._onAfterDraw = null;
-    }
-
-    if (this.#onVisibilityChange) {
-      document.removeEventListener("visibilitychange", this.#onVisibilityChange);
-      this.#onVisibilityChange = null;
     }
 
     this.viewer.textContent = "";
@@ -13947,7 +13952,7 @@ class BasePreferences {
         "disablePageLabels": false,
         "enablePermissions": false,
         "enablePrintAutoRotate": true,
-        "enableScripting": false,
+        "enableScripting": true,
         "externalLinkTarget": 0,
         "historyUpdateUrl": false,
         "ignoreDestinationZoom": false,
@@ -15489,8 +15494,8 @@ var _app_options = __webpack_require__(1);
 
 var _app = __webpack_require__(2);
 
-const pdfjsVersion = '2.13.16';
-const pdfjsBuild = '2f5be5f21';
+const pdfjsVersion = '2.12.313';
+const pdfjsBuild = 'a2ae56f39';
 window.PDFViewerApplication = _app.PDFViewerApplication;
 window.PDFViewerApplicationOptions = _app_options.AppOptions;
 ;
@@ -15529,20 +15534,20 @@ function getViewerConfiguration() {
       zoomIn: document.getElementById("zoomIn"),
       zoomOut: document.getElementById("zoomOut"),
       viewFind: document.getElementById("viewFind"),
-      openFile: document.getElementById("fvtt-dummybutton"),
-      print: document.getElementById("fvtt-dummybutton"),
-      presentationModeButton: document.getElementById("fvtt-dummybutton"),
-      download: document.getElementById("fvtt-dummybutton"),
-      viewBookmark: document.getElementById("fvtt-dummybutton")
+      openFile: document.getElementById("openFile"),
+      print: document.getElementById("print"),
+      presentationModeButton: document.getElementById("presentationMode"),
+      download: document.getElementById("download"),
+      viewBookmark: document.getElementById("viewBookmark")
     },
     secondaryToolbar: {
       toolbar: document.getElementById("secondaryToolbar"),
       toggleButton: document.getElementById("secondaryToolbarToggle"),
       toolbarButtonContainer: document.getElementById("secondaryToolbarButtonContainer"),
-      presentationModeButton: document.getElementById("fvtt-dummybutton"),
-      openFileButton: document.getElementById("fvtt-dummybutton"),
-      printButton: document.getElementById("fvtt-dummybutton"),
-      downloadButton: document.getElementById("fvtt-dummybutton"),
+      presentationModeButton: document.getElementById("secondaryPresentationMode"),
+      openFileButton: document.getElementById("secondaryOpenFile"),
+      printButton: document.getElementById("secondaryPrint"),
+      downloadButton: document.getElementById("secondaryDownload"),
       viewBookmarkButton: document.getElementById("secondaryViewBookmark"),
       firstPageButton: document.getElementById("firstPage"),
       lastPageButton: document.getElementById("lastPage"),
